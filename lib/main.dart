@@ -35,6 +35,116 @@ class MyApp extends StatelessWidget {
   }
 }
 
+class Section extends StatelessWidget {
+  final String title;
+  final Widget child;
+  final bool noPadding;
+
+  const Section({
+    super.key,
+    required this.title,
+    required this.child,
+    this.noPadding = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = noPadding ? EdgeInsets.zero : const EdgeInsets.all(16);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 30),
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (title.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class TodayActionCard extends StatelessWidget {
+  final String title;
+  final String category;
+
+  const TodayActionCard({
+    super.key,
+    required this.title,
+    required this.category,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      // padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white, // 배경색 (필요시)
+        border: Border.all(color: Colors.grey, width: 1), // ✅ border 추가
+        borderRadius: BorderRadius.circular(8), // 모서리 둥글게
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // ✅ 왼쪽 원형 이미지
+          CircleAvatar(
+            radius: 20,
+            backgroundImage: NetworkImage("https://picsum.photos/50/50"),
+          ),
+          const SizedBox(width: 10),
+
+          // ✅ 가운데 텍스트 영역
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    category,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ✅ 오른쪽 원형 이미지
+          CircleAvatar(
+            radius: 15,
+            backgroundImage: NetworkImage("https://picsum.photos/50/50"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
@@ -58,60 +168,93 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _incrementCounter() {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
       _counter++;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+      body: SafeArea(
+        // 안전 영역 대응
+        child: SingleChildScrollView(
+          // ✅ 스크롤 가능하게 만들기
+          padding: const EdgeInsets.all(16), // 원하는 여백
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Section(
+                title: "오늘의 활동",
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final text in [
+                      "이것은 매우 긴 텍스트로 테스트하는 예제입니다. 너무 길어지면 두 줄로 표시됩니다.",
+                      "색깔 맞추기",
+                      "색깔 맞추기 색깔 맞추기, ooooooooooo",
+                      "기억력 테스트",
+                      "퍼즐 맞추기",
+                      "이것은 매우 긴 텍스트로 테스트하는 예제입니다. 너무 길어지면 두 줄로 표시됩니다.",
+                      "색깔 맞추기",
+                      "색깔 맞추기 색깔 맞추기, ooooooooooo",
+                      "기억력 테스트",
+                      "퍼즐 맞추기",
+                      "이것은 매우 긴 텍스트로 테스트하는 예제입니다. 너무 길어지면 두 줄로 표시됩니다.",
+                      "색깔 맞추기",
+                      "색깔 맞추기 색깔 맞추기, ooooooooooo",
+                      "기억력 테스트",
+                      "퍼즐 맞추기",
+                    ])
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 30),
+                        child: TodayActionCard(title: text, category: "기억력"),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
+
+      // Center(
+      //   child: Column(
+      //     mainAxisAlignment: MainAxisAlignment.center,
+      //     children: <Widget>[
+      //       Section(
+      //         title: "오늘의 활동",
+      //         child: Column(
+      //           crossAxisAlignment: CrossAxisAlignment.stretch,
+      //           children: [
+      //             for (final text in [
+      //               "이것은 매우 긴 텍스트로 테스트하는 예제입니다. 너무 길어지면 두 줄로 표시됩니다.",
+      //               "색깔 맞추기",
+      //               "색깔 맞추기 색깔 맞추기, ooooooooooo",
+      //               "기억력 테스트",
+      //               "퍼즐 맞추기",
+      //             ])
+      //               Padding(
+      //                 padding: const EdgeInsets.only(bottom: 30),
+      //                 child: TodayActionCard(title: text, category: "기억력"),
+      //               ),
+      //           ],
+      //         ),
+      //       ),
+      //     ],
+
+      //     // <Widget>[
+      //     //   const Text('You have pushed the button this many times:'),
+      //     //   Text(
+      //     //     '$_counter',
+      //     //     style: Theme.of(context).textTheme.headlineMedium,
+      //     //   ),
+      //     // ],
+      //   ),
+      // ),
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
