@@ -175,91 +175,47 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: SafeArea(
-        // 안전 영역 대응
-        child: SingleChildScrollView(
-          // ✅ 스크롤 가능하게 만들기
-          padding: const EdgeInsets.all(16), // 원하는 여백
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Section(
-                title: "오늘의 활동",
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final text in [
-                      "이것은 매우 긴 텍스트로 테스트하는 예제입니다. 너무 길어지면 두 줄로 표시됩니다.",
-                      "색깔 맞추기",
-                      "색깔 맞추기 색깔 맞추기, ooooooooooo",
-                      "기억력 테스트",
-                      "퍼즐 맞추기",
-                      "이것은 매우 긴 텍스트로 테스트하는 예제입니다. 너무 길어지면 두 줄로 표시됩니다.",
-                      "색깔 맞추기",
-                      "색깔 맞추기 색깔 맞추기, ooooooooooo",
-                      "기억력 테스트",
-                      "퍼즐 맞추기",
-                      "이것은 매우 긴 텍스트로 테스트하는 예제입니다. 너무 길어지면 두 줄로 표시됩니다.",
-                      "색깔 맞추기",
-                      "색깔 맞추기 색깔 맞추기, ooooooooooo",
-                      "기억력 테스트",
-                      "퍼즐 맞추기",
-                    ])
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 30),
-                        child: TodayActionCard(title: text, category: "기억력"),
-                      ),
-                  ],
-                ),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 200, // 최대로 펼쳐졌을 때 높이
+            pinned: true, // 스크롤해도 AppBar 고정 여부
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text("치매예방교실"), // 스크롤 시 작아지는 타이틀
+              background: Image.network(
+                "https://picsum.photos/300/200",
+                fit: BoxFit.cover,
               ),
-            ],
+            ),
           ),
-        ),
+
+          SliverToBoxAdapter(
+            // 일반 위젯 넣을 수 있는 래퍼
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Section(
+                    title: "오늘의 활동",
+                    child: Column(
+                      children: List.generate(
+                        15,
+                        (i) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: TodayActionCard(
+                            title: "활동 ${i + 1}",
+                            category: "기억력",
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
-
-      // Center(
-      //   child: Column(
-      //     mainAxisAlignment: MainAxisAlignment.center,
-      //     children: <Widget>[
-      //       Section(
-      //         title: "오늘의 활동",
-      //         child: Column(
-      //           crossAxisAlignment: CrossAxisAlignment.stretch,
-      //           children: [
-      //             for (final text in [
-      //               "이것은 매우 긴 텍스트로 테스트하는 예제입니다. 너무 길어지면 두 줄로 표시됩니다.",
-      //               "색깔 맞추기",
-      //               "색깔 맞추기 색깔 맞추기, ooooooooooo",
-      //               "기억력 테스트",
-      //               "퍼즐 맞추기",
-      //             ])
-      //               Padding(
-      //                 padding: const EdgeInsets.only(bottom: 30),
-      //                 child: TodayActionCard(title: text, category: "기억력"),
-      //               ),
-      //           ],
-      //         ),
-      //       ),
-      //     ],
-
-      //     // <Widget>[
-      //     //   const Text('You have pushed the button this many times:'),
-      //     //   Text(
-      //     //     '$_counter',
-      //     //     style: Theme.of(context).textTheme.headlineMedium,
-      //     //   ),
-      //     // ],
-      //   ),
-      // ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
