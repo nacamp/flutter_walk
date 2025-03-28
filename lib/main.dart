@@ -1,5 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+class StepCountService {
+  static const EventChannel _eventChannel = EventChannel('step_count_stream');
+
+  // ✅ 한 번만 받아서 재사용하는 Stream
+  static final Stream<int> _stream = _eventChannel.receiveBroadcastStream().map(
+    (event) => event as int,
+  );
+
+  static Stream<int> get stepStream => _stream;
+}
+
+class StepServiceController {
+  static const platform = MethodChannel('step_control');
+
+  static Future<void> start() async {
+    final result = await platform.invokeMethod('startService');
+    print("startService result: $result");
+  }
+
+  static Future<void> stop() async {
+    await platform.invokeMethod('stopService');
+  }
+}
 
 class StepPermissionScreen extends StatefulWidget {
   const StepPermissionScreen({super.key});
@@ -57,41 +83,6 @@ class _StepPermissionScreenState extends State<StepPermissionScreen> {
                   ],
                 ),
       ),
-    );
-  }
-}
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
@@ -371,7 +362,7 @@ class TodayWalkingCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          steps.toString(),
+          NumberFormat('#,###').format(steps),
           style: const TextStyle(
             color: Color(0xFF72CAA5),
             fontSize: 30,
@@ -390,15 +381,6 @@ class TodayWalkingCard extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -406,31 +388,68 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  int _steps = 0;
+  bool _isPermissionGranted = false;
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   // 더 안전하게 context 쓰기
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     if (mounted) {
+  //       _showPermissionDialog();
+  //     }
+  //   });
+  //   StepServiceController.start();
+  //   // Future.microtask(() => _showPermissionDialog());
+  //   StepCountService.stepStream.listen((event) {
+  //     if (mounted) {
+  //       setState(() {
+  //         _steps = event;
+  //       });
+  //     }
+  //   });
+  // }
 
   @override
   void initState() {
     super.initState();
-    // 더 안전하게 context 쓰기
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handlePermissionAndStart();
+    });
+  }
+
+  Future<void> _handlePermissionAndStart() async {
+    final status = await Permission.activityRecognition.status;
+
+    if (status.isGranted) {
+      _startStepService(); // 권한이 있을 경우만 시작
+    } else {
+      final result = await _showPermissionDialog();
+      if (result == true) {
+        _startStepService(); // 사용자가 허용했을 경우만 시작
+      } else {
+        debugPrint("⛔️ 권한 거부됨, 서비스 시작 안함");
+      }
+    }
+  }
+
+  void _startStepService() {
+    StepServiceController.start();
+    setState(() {
+      _isPermissionGranted = true;
+    });
+    StepCountService.stepStream.listen((event) {
       if (mounted) {
-        _showPermissionDialog();
+        setState(() {
+          _steps = event;
+        });
       }
     });
-    // Future.microtask(() => _showPermissionDialog());
   }
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  Future<void> _showPermissionDialog() async {
-    final status = await Permission.activityRecognition.status;
-    if (status.isGranted) return;
-
-    await showDialog(
+  Future<bool> _showPermissionDialog() async {
+    final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (context) {
@@ -439,20 +458,13 @@ class _MyHomePageState extends State<MyHomePage> {
           content: const Text("걸음 수 측정을 위해 권한이 필요합니다."),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text("취소"),
             ),
             ElevatedButton(
               onPressed: () async {
-                final result = await Permission.activityRecognition.request();
-                Navigator.of(context).pop();
-
-                if (result.isGranted) {
-                  debugPrint("✅ 권한 허용됨");
-                } else {
-                  debugPrint("❌ 권한 거부됨");
-                  openAppSettings(); // 설정 앱 열기
-                }
+                final status = await Permission.activityRecognition.request();
+                Navigator.of(context).pop(status.isGranted);
               },
               child: const Text("권한 허용"),
             ),
@@ -460,6 +472,8 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       },
     );
+
+    return result ?? false;
   }
 
   @override
@@ -484,10 +498,45 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
-                children: [
+                children: <Widget>[
                   Section(
                     title: "오늘의 걸음수",
-                    child: TodayWalkingCard(steps: 2000),
+                    child:
+                        _isPermissionGranted
+                            ? TodayWalkingCard(steps: _steps % 10000)
+                            : Column(
+                              children: const [
+                                Icon(Icons.block, size: 40, color: Colors.red),
+                                SizedBox(height: 10),
+                                Text(
+                                  "권한이 없어 걸음 수를 측정할 수 없습니다.",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.red,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                    // child: StreamBuilder<int>(
+                    //   stream: Stream<int>.periodic(
+                    //     Duration(seconds: 1),
+                    //     (x) => x * 500,
+                    //   ),
+                    //   builder: (context, snapshot) {
+                    //     final steps = snapshot.data ?? 0;
+                    //     print("🔥 StreamBuilder steps: $steps");
+                    //     return TodayWalkingCard(steps: steps);
+                    //   },
+                    // ),
+                    // child: StreamBuilder<int>(
+                    //   stream: StepCountService.stepStream,
+                    //   builder: (context, snapshot) {
+                    //     final steps = snapshot.data ?? 0;
+                    //     print("StreamBuilder steps: $steps");
+                    //     return TodayWalkingCard(steps: steps);
+                    //   },
+                    // ),
                   ),
                   Section(
                     title: "오늘의 목표",
@@ -573,4 +622,24 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      ),
+      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+    );
+  }
+}
+
+void main() {
+  runApp(const MyApp());
 }
